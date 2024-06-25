@@ -14,7 +14,7 @@ type Message struct {
 // Server struct
 type Server struct {
 	listenAddr string        // server listen address
-	ln         net.Listener  // server listener
+	ln         net.Listener  // net.Listener, ağ bağlantılarını dinlemek ve kabul etmek için kullanılan bir arayüzdür.
 	quitch     chan struct{} // server quit channel
 	msgch      chan Message  // server message channel
 }

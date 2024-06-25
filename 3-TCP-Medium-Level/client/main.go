@@ -4,42 +4,51 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"time"
 )
 
 func main() {
-
-	conn, err := net.Dial("tcp4", ":3000") // server listen port 3000 olarak ayarlandı
+	// TCP üzerinden 3000 portuna bağlan
+	conn, err := net.Dial("tcp4", ":3000")
 	if err != nil {
 		panic(err)
 	}
+	defer conn.Close() // Program sonunda bağlantıyı kapat
 
-	defer conn.Close() // server bağlantısı kapatıldı
-
-	go func() { //1 DEN FAZLA client ustunden hızmet verebılmek ıcın yaptık
+	// Bağlantı üzerinden gelen verileri dinlemek için yeni bir goroutine başlat
+	go func() {
 		for {
-			buff := make([]byte, 8)      // buffer hazır
-			_, err := conn.Read(buff[:]) // okuma yapıldı
+			buff := make([]byte, 8)      // 8 byte'lık bir buffer oluştur
+			_, err := conn.Read(buff[:]) // Bağlantıdan gelen verileri buffer'a oku
 
 			if err != nil {
-				fmt.Println("read error:", err)
-				conn.Close() // client bağlantısı kapatıldı
-				break
+				fmt.Println("Okuma hatası:", err)
+				conn.Close() // Hata durumunda bağlantıyı kapat
+				break        // Döngüden çık
 			}
 		}
 	}()
 
-	for i := 0; i < 10; i++ {
-		data := createMessage(MessageTypeText, "hello from client") // mesaj olusturuldu
-		_, err = conn.Write(data)                                   // mesaj yazıldı
+	start := time.Now() // Zamanı başlat
+
+	// 150000 kez dönecek bir döngü
+	for i := 0; i < 150000; i++ {
+		// MessageTypeText türünde "hello from client" mesajı oluştur
+		data := createMessage(MessageTypeText, "hello from client")
+		// Mesajı bağlantı üzerinden gönder
+		_, err = conn.Write(data)
 		if err != nil {
-			fmt.Println("write error:", err)
+			fmt.Println("Yazma hatası:", err)
 		}
 	}
 
+	end := time.Since(start) // Zamanı durdur ve geçen süreyi al
+	fmt.Printf("Geçen süre: %s\n", end)
+
+	// Sonsuz döngüde bekleyerek programın kapanmamasını sağla
 	for {
 		select {}
 	}
-
 }
 
 const (
@@ -54,19 +63,19 @@ uint32  | uint32  | string
 
 	type	 | length  | data
 */
-// mesaj olusturuldu
+// mesaj oluşturuldu
 func createMessage(mtype int, data string) []byte {
-	buf := make([]byte, 4+4+len(data))                        // buffer olusturuldu
-	binary.LittleEndian.PutUint32(buf[0:], uint32(mtype))     // 0 dan ıtıbaren
-	binary.LittleEndian.PutUint32(buf[4:], uint32(len(data))) //4 en ıtıbaren
-	copy(buf[8:], []byte(data))                               //8 den ıtıbaren
-	return buf
+	buf := make([]byte, 4+4+len(data))                        // Belirli bir boyutta bir buffer oluşturuldu
+	binary.LittleEndian.PutUint32(buf[0:], uint32(mtype))     // Mesajın türünü (mtype) buffer'a Little Endian formatında yazıldı (4 byte)
+	binary.LittleEndian.PutUint32(buf[4:], uint32(len(data))) // Mesajın uzunluğunu (data uzunluğu) buffer'a Little Endian formatında yazıldı (4 byte)
+	copy(buf[8:], []byte(data))                               // Mesajın veri kısmı (data) buffer'a kopyalandı (veri kısmı 8 byte'dan itibaren başlar)
+	return buf                                                // Oluşturulan buffer fonksiyondan döndürüldü
 }
 
 // mesaj okundu
 func readMessage(data []byte) (mtype, mlen uint32, msg string) {
-	mtype = binary.LittleEndian.Uint32(data[0:]) // 0 dan ıtıbaren
-	mlen = binary.LittleEndian.Uint32(data[4:])  //4 en ıtıbaren
-	msg = string(data[8:])                       // 8 den ıtıbaren
-	return mtype, mlen, msg
+	mtype = binary.LittleEndian.Uint32(data[0:]) // Buffer'ın başından itibaren 4 byte'lık kısım okunarak mesajın türü (mtype) elde edildi
+	mlen = binary.LittleEndian.Uint32(data[4:])  // Buffer'ın 4. byte'ından itibaren 4 byte'lık kısım okunarak mesajın uzunluğu (mlen) elde edildi
+	msg = string(data[8:])                       // Buffer'ın 8. byte'ından itibaren kalan kısmı string olarak alarak mesajın içeriği (msg) elde edildi
+	return mtype, mlen, msg                      // Okunan değerler fonksiyondan döndürüldü
 }
