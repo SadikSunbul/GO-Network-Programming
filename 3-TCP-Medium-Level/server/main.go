@@ -54,7 +54,8 @@ func handler(conn net.Conn) {
 	fmt.Println("Bağlantı kabul edildi:", conn.RemoteAddr().String())
 
 	for {
-		header := make([]byte, 512)    // 512 byte'lık bir header dizisi oluşturuldu
+
+		header := make([]byte, 8)      // 8 byte'lık bir header dizisi oluşturuldu
 		_, err := conn.Read(header[:]) // Bağlantıdan gelen veriler header dizisine okundu
 		if err != nil {
 			fmt.Println("Okuma hatası:", err)

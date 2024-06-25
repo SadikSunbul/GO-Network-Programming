@@ -32,7 +32,7 @@ func main() {
 	start := time.Now() // Zamanı başlat
 
 	// 150000 kez dönecek bir döngü
-	for i := 0; i < 150000; i++ {
+	for i := 0; i < 10; i++ {
 		// MessageTypeText türünde "hello from client" mesajı oluştur
 		data := createMessage(MessageTypeText, "hello from client")
 		// Mesajı bağlantı üzerinden gönder
