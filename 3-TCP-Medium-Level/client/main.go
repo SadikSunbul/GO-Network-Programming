@@ -17,15 +17,14 @@ func main() {
 
 	go func() { //1 DEN FAZLA client ustunden hızmet verebılmek ıcın yaptık
 		for {
-			buff := make([]byte, 8)        // buffer hazır
-			_, err := conn.Read(buff[:])   // okuma yapıldı
-			_, _, msg := readMessage(buff) // mesaj okundu
+			buff := make([]byte, 8)      // buffer hazır
+			_, err := conn.Read(buff[:]) // okuma yapıldı
+
 			if err != nil {
 				fmt.Println("read error:", err)
 				conn.Close() // client bağlantısı kapatıldı
 				break
 			}
-			fmt.Printf("mssage from server : %s \n", msg) // mesaj yazdırıldı
 		}
 	}()
 
