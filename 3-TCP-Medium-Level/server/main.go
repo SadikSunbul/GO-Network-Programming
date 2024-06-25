@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 )
@@ -26,20 +27,49 @@ func handler(conn net.Conn) {
 	fmt.Println("connection accepted:", conn.RemoteAddr().String())
 
 	for {
-		buff := make([]byte, 8)
-		_, err := conn.Read(buff[:])
+		header := make([]byte, 8)
+		_, err := conn.Read(header[:])
 		if err != nil {
 			fmt.Println("read error:", err)
 			conn.Close()
 			break
 		}
-		fmt.Printf("mssage client : %s \n", buff)
-
-		_, err = conn.Write(buff)
+		mlen := binary.LittleEndian.Uint32(header[4:])
+		databuff := make([]byte, mlen)
+		conn.Read(databuff[:])
 		if err != nil {
-			fmt.Println("write error:", err)
-			continue
+			fmt.Println("read error:", err)
+			conn.Close()
+			break
 		}
 
+		var messagebug []byte
+		messagebug = append(messagebug, header...)
+		messagebug = append(messagebug, databuff...)
+		mtype, _, msg := readMessage(messagebug)
+		fmt.Printf("type:%d, len:%d, message:%s \n", mtype, mlen, msg)
 	}
+}
+
+// go run main.go
+
+/*
+0 1 2 3 | 4 5 6 7 | 8 N+
+uint32  | uint32  | string
+
+	type	 | length  | data
+*/
+func createMessage(mtype int, data string) []byte {
+	buf := make([]byte, 4+4+len(data))
+	binary.LittleEndian.PutUint32(buf[0:], uint32(mtype))     // 0 dan ıtıbaren
+	binary.LittleEndian.PutUint32(buf[4:], uint32(len(data))) //4 en ıtıbaren
+	copy(buf[8:], []byte(data))                               //8 den ıtıbaren
+	return buf
+}
+
+func readMessage(data []byte) (mtype, mlen uint32, msg string) {
+	mtype = binary.LittleEndian.Uint32(data[0:])
+	mlen = binary.LittleEndian.Uint32(data[4:])
+	msg = string(data[8:])
+	return mtype, mlen, msg
 }
