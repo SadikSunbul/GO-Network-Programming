@@ -10,6 +10,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Println("connection ready!")
 	for { //1 DEN FAZLA client ustunden hızmet verebılmek ıcın yaptık
 		conn, err := ls.Accept()
 		if err != nil {
