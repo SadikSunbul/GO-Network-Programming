@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	ls, err := net.Listen("tcp4", ":7000")
+	ls, err := net.Listen("tcp4", ":3000")
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +31,7 @@ func handler(conn net.Conn) {
 			conn.Close()
 			break
 		}
-		fmt.Sprintf("mssage client : %s\n", buff)
+		fmt.Printf("mssage client : %s \n", buff)
 
 		_, err = conn.Write(buff)
 		if err != nil {
