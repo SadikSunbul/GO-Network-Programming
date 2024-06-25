@@ -6,11 +6,17 @@ import (
 	"net"
 )
 
+type Message struct {
+	from    string
+	payload []byte
+}
+
 // Server struct
 type Server struct {
 	listenAddr string        // server listen address
 	ln         net.Listener  // server listener
 	quitch     chan struct{} // server quit channel
+	msgch      chan Message  // server message channel
 }
 
 // NewServer creates a new server
@@ -18,6 +24,7 @@ func NewServer(listenAddr string) *Server {
 	return &Server{
 		listenAddr: listenAddr,
 		quitch:     make(chan struct{}),
+		msgch:      make(chan Message, 10),
 	}
 }
 
@@ -33,6 +40,7 @@ func (s *Server) Start() error {
 	go s.acceptLoop() // start server accept loop
 
 	<-s.quitch // wait for server quit
+	close(s.msgch)
 
 	return nil // server quited
 }
@@ -51,6 +59,7 @@ func (s *Server) acceptLoop() {
 }
 
 // readLoop reads messages from the connection
+
 func (s *Server) readLoop(conn net.Conn) {
 	defer conn.Close()        // close connection
 	buf := make([]byte, 2048) // buffer for reading
@@ -60,26 +69,41 @@ func (s *Server) readLoop(conn net.Conn) {
 			fmt.Print("read error:", err) // print error
 			continue
 		}
-		msg := buf[:n]           // save message
-		fmt.Println(string(msg)) // print message
+		s.msgch <- Message{
+			from:    conn.RemoteAddr().String(),
+			payload: buf[:n],
+		}
+
+		conn.Write([]byte("thank you for your message!"))
+
 	}
 }
 
 // readLoop reads messages from the connection line by line
 //func (s *Server) readLoop(conn net.Conn) {
-//	defer conn.Close()              // close connection
-//	reader := bufio.NewReader(conn) // create a reader for connection
-//	for {
-//		msg, err := reader.ReadString('\n') // read until newline
-//		if err != nil {
-//			fmt.Println("read error:", err) // print error
-//			return
+//	defer conn.Close() // close connection
+//
+//	scanner := bufio.NewScanner(conn)
+//	for scanner.Scan() {
+//		msg := scanner.Bytes() // get bytes from scanner
+//		s.msgch <- Message{
+//			from:    conn.RemoteAddr().String(),
+//			payload: msg,
 //		}
-//		fmt.Print("Message received:", msg) // print message
+//	}
+//
+//	if err := scanner.Err(); err != nil {
+//		fmt.Println("read error:", err) // print error
 //	}
 //}
 
 func main() {
 	server := NewServer(":3000") // create server
-	log.Fatal(server.Start())    // start server
+
+	go func() {
+		for msg := range server.msgch {
+			fmt.Printf("received message from connection (%s):%s\n", msg.from, string(msg.payload))
+		}
+	}()
+	log.Fatal(server.Start()) // start server
 }
