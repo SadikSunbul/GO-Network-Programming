@@ -65,6 +65,20 @@ func (s *Server) readLoop(conn net.Conn) {
 	}
 }
 
+// readLoop reads messages from the connection line by line
+//func (s *Server) readLoop(conn net.Conn) {
+//	defer conn.Close()              // close connection
+//	reader := bufio.NewReader(conn) // create a reader for connection
+//	for {
+//		msg, err := reader.ReadString('\n') // read until newline
+//		if err != nil {
+//			fmt.Println("read error:", err) // print error
+//			return
+//		}
+//		fmt.Print("Message received:", msg) // print message
+//	}
+//}
+
 func main() {
 	server := NewServer(":3000") // create server
 	log.Fatal(server.Start())    // start server
